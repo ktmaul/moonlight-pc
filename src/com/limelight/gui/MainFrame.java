@@ -6,6 +6,8 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -19,6 +21,9 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import com.limelight.Limelight;
+import com.limelight.binding.PlatformBinding;
+import com.limelight.nvstream.NvConnection;
+import com.limelight.nvstream.http.NvHTTP;
 import com.limelight.settings.PreferencesManager;
 import com.limelight.settings.PreferencesManager.Preferences;
 
@@ -144,15 +149,16 @@ public class MainFrame {
 	private ActionListener createStreamButtonListener() {
 		return new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String host = hostField.getText();
-				Preferences prefs = PreferencesManager.getPreferences();
-				if (!host.equals(prefs.getHost())) {
-					prefs.setHost(host);
-					PreferencesManager.writePreferences(prefs);
-				}
-				Limelight.createInstance(host);
-			}
-		};
+                            String host = hostField.getText();
+                            Preferences prefs = PreferencesManager.getPreferences();
+                            if (!host.equals(prefs.getHost())) {
+                                prefs.setHost(host);
+                                PreferencesManager.writePreferences(prefs);
+                            }
+                            // Limelight.createInstance(host);
+                            showApps();
+                        }
+                };
 	}
 
 	/*
@@ -175,4 +181,30 @@ public class MainFrame {
 			}
 		};
 	}
+	
+	private void showApps() {
+                String host = hostField.getText();
+                String macAddress = null;
+                try {
+                        macAddress = InetAddress.getByName(host).getHostAddress();
+                } catch (UnknownHostException e) {
+                        e.printStackTrace();
+                }
+
+
+                if (macAddress == null) {
+                        System.out.println("Couldn't find a MAC address");
+                        return;
+                }
+
+                NvHTTP httpConn;
+                try {
+                        httpConn = new NvHTTP(InetAddress.getByName(host),
+                                              macAddress, PlatformBinding.getDeviceName(), PlatformBinding.getCryptoProvider());
+                        AppsFrame appsFrame = new AppsFrame(httpConn, host);
+                        appsFrame.build();
+                } catch (UnknownHostException e1) {
+                        e1.printStackTrace();
+                }
+        }
 }
